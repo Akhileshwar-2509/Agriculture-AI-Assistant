@@ -16,8 +16,6 @@ print("Loading datasets...")
 pesticides_df = pd.read_csv(DATA_PATH + "pesticides.csv")
 pesticides_df.columns = pesticides_df.columns.str.strip()  # Remove leading/trailing spaces
 pesticides_df.rename(columns={"Value": "Unit"}, inplace=True)
-print("Columns in pesticides_df after renaming:", pesticides_df.columns.tolist())  # Debugging
-
 
 # Load rainfall data
 rainfall_df = pd.read_csv(DATA_PATH + "rainfall.csv")
@@ -39,13 +37,18 @@ merged_df = yield_df.merge(pesticides_df, on=["Area", "Year"], how="left")
 merged_df = merged_df.merge(rainfall_df, on=["Area", "Year"], how="left")
 merged_df = merged_df.merge(temp_df, on=["Area", "Year"], how="left")
 
-### 3️⃣ Handle Missing Values ###
-print("Handling missing values...")
+### 3️⃣ Handle Data Issues ###
+print("Handling data issues...")
 
-# Fill missing values with median or mean
-merged_df["pesticides_tonnes"].fillna(merged_df["pesticides_tonnes"].median(), inplace=True)
-merged_df["rainfall_mm"].fillna(merged_df["rainfall_mm"].mean(), inplace=True)
-merged_df["temperature"].fillna(merged_df["temperature"].mean(), inplace=True)
+# Convert numeric columns from string to numbers
+numeric_cols = ["pesticides_tonnes", "rainfall_mm", "temperature"]  # Add other relevant numeric columns
+for col in numeric_cols:
+    merged_df[col] = pd.to_numeric(merged_df[col], errors='coerce')  # Convert, setting invalid values to NaN
+
+# Handle missing values using .loc
+merged_df.loc[:, "pesticides_tonnes"] = merged_df["pesticides_tonnes"].fillna(merged_df["pesticides_tonnes"].median())
+merged_df.loc[:, "rainfall_mm"] = merged_df["rainfall_mm"].fillna(merged_df["rainfall_mm"].mean())
+merged_df.loc[:, "temperature"] = merged_df["temperature"].fillna(merged_df["temperature"].mean())
 
 ### 4️⃣ Save Processed Data ###
 print("Saving cleaned data...")
@@ -53,4 +56,4 @@ print("Saving cleaned data...")
 output_file = OUTPUT_PATH + "cleaned_data.csv"
 merged_df.to_csv(output_file, index=False)
 
-print(f"Preprocessing complete! Cleaned data saved to: {output_file}")
+print(f"✅ Preprocessing complete! Cleaned data saved to: {output_file}")
